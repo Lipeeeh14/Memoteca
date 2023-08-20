@@ -1,3 +1,4 @@
+import { Router } from '@angular/router';
 import { PensamentoService } from './../pensamento.service';
 import { Pensamento } from './../pensamento';
 import { Component, OnInit } from '@angular/core';
@@ -13,17 +14,24 @@ export class ListarPensamentoComponent implements OnInit {
   paginaAtual: number = 1;
   haMaisPensamentos: boolean = true;
   filtro: string = '';
+  favoritos: boolean = false;
+  listaFavoritos: Pensamento[] = [];
+  titulo: string = 'Meu Mural';
 
-  constructor(private service: PensamentoService) { }
+  constructor(
+    private service: PensamentoService,
+    private router: Router
+  ) { }
 
   ngOnInit(): void {
-    this.service.listar(this.paginaAtual, this.filtro).subscribe(res => {
+    this.service.listar(this.paginaAtual, this.filtro, this.favoritos).subscribe(res => {
       this.listaPensamentos = res
     });
   }
 
   carregarMaisPensamentos() {
-    this.service.listar(++this.paginaAtual, this.filtro).subscribe(res => {
+    this.favoritos = false;
+    this.service.listar(++this.paginaAtual, this.filtro, this.favoritos).subscribe(res => {
       this.listaPensamentos.push(...res);
       if (!res.length) {
         this.haMaisPensamentos = false;
@@ -32,11 +40,34 @@ export class ListarPensamentoComponent implements OnInit {
   }
 
   pesquisarPensamentos() {
+    this.favoritos = false;
     this.haMaisPensamentos = true;
     this.paginaAtual = 1;
-    this.service.listar(this.paginaAtual, this.filtro)
+    this.service.listar(this.paginaAtual, this.filtro, this.favoritos)
       .subscribe(res => {
         this.listaPensamentos = res;
       })
+  }
+
+  listarFavoritos() {
+    this.titulo = 'Meus Favoritos';
+    this.favoritos = true;
+    this.haMaisPensamentos = true;
+    this.paginaAtual = 1;
+    this.service.listar(this.paginaAtual, this.filtro, this.favoritos
+      ).subscribe(res => {
+        this.listaPensamentos = res;
+        this.listaFavoritos = res;
+      });
+  }
+
+  recarregarPensamentos() {
+    this.favoritos = false;
+    this.paginaAtual = 1;
+
+    // Regarregar a página sem a reutilização da mesma rota e sem carregar toda a página
+    this.router.routeReuseStrategy.shouldReuseRoute = () => false;
+    this.router.onSameUrlNavigation = 'reload';
+    this.router.navigate([this.router.url]);
   }
 }
